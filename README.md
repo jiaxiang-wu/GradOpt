@@ -1,7 +1,7 @@
 # GradOpt
 A collection of gradient-based optimization methods.
 
-In this repository, four gradient-based optimization methods are implemented, e.g.:
+In this repository, four gradient-based optimization methods are implemented, including:
 * (Stochastic) Gradient Descent
 * AdaGrad
 * AdaDelta
@@ -11,3 +11,9 @@ For the gradient computation, you can either rely on the whole dataset (where st
 
 ## Quick Start
 "demo.m" provides a demonstration of how to solve a linear regression problem via the above methods. Just run it!
+
+SGD                     |  AdaGrad                | AdaDelta                  | Adam
+:----------------------:|:-----------------------:|:-------------------------:|:-----------------:
+![GradDst](GradDst.png) | ![AdaGrad](AdaGrad.png) | ![AdaDelta](AdaDelta.png) | ![Adam](Adam.png)
+
+Note: Y-axis in the above four figures differ slightly.

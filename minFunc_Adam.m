@@ -1,23 +1,24 @@
-function [funcVal, funcValLst, paraVec] = ...
-  minFunc_Adam(paraVec, funcHndl, opts, varargin)
+function [paraVec, funcVal, funcVec] = ...
+  minFunc_Adam(funcHndl, paraVec, opts, varargin)
 % INTRO
 %   minimize the objective function via Adam
 % INPUT
-%   paraVec: D x 1 (initial solution)
 %   funcHndl: function handler (compute the function's value and gradient)
+%   paraVec: D x 1 (initial solution)
 %   opts: structure (optimization options)
 %   varargin: K x 1 (cell array; additional parameters)
 % OUTPUT
-%   funcVal: scalar (function's value of the optimal solution)
-%   funcValLst: T x 1 (list of function's value through iterations)
 %   paraVec: D x 1 (optimal solution)
+%   funcVal: scalar (function's value of the optimal solution)
+%   funcVec: T x 1 (list of function's values through iterations)
 
 % solve the optimization via gradient-based update
 lr = opts.lrInit;
 iterIdx = 0;
 gradVecAccmFst = zeros(size(paraVec));
 gradVecAccmSec = zeros(size(paraVec));
-funcValLst = zeros(opts.epchCnt, 1);
+funcVec = zeros(opts.epchCnt + 1, 1);
+[funcVec(1), ~] = funcHndl(paraVec, [], varargin{:});
 for epchIdx = 1 : opts.epchCnt
   % generate the mini-batch partition
   smplIdxLst = GnrtMiniBatc(opts.smplCnt, opts.batcSiz);
@@ -43,7 +44,7 @@ for epchIdx = 1 : opts.epchCnt
 
   % record related variables
   [funcVal, ~] = funcHndl(paraVec, [], varargin{:});
-  funcValLst(epchIdx) = funcVal;
+  funcVec(epchIdx + 1) = funcVal;
 end
 
 end

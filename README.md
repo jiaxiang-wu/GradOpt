@@ -12,7 +12,4 @@ For the gradient computation, you can either rely on the whole dataset (where st
 ## Quick Start
 "demo.m" provides a demonstration of how to solve a linear regression problem via the above methods. Just run it!
 
-<img src="GradDst.png" width="400"> <img src="AdaGrad.png" width="400">
-<img src="AdaDelta.png" width="400"> <img src="Adam.png" width="400">
-
-Note: Y-axis in the above four figures differ slightly.
+![Optimization Process](OptProc.png)

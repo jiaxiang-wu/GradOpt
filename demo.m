@@ -30,10 +30,13 @@ fprintf('[INFO] funcVal (closed-form) = %.4e\n', funcValClsd);
 [optsGradDst, optsAdaGrad, optsAdaDelta, optsAdam] = InitOpts(opts.smplCnt);
 
 % evaluate each method's performance
-EvaMethod(featMat, ouptMat, optsGradDst);
-EvaMethod(featMat, ouptMat, optsAdaGrad);
-EvaMethod(featMat, ouptMat, optsAdaDelta);
-EvaMethod(featMat, ouptMat, optsAdam);
+[~, ~, funcVecGradDst]  = EvaMethod(featMat, ouptMat, optsGradDst);
+[~, ~, funcVecAdaGrad]  = EvaMethod(featMat, ouptMat, optsAdaGrad);
+[~, ~, funcVecAdaDelta] = EvaMethod(featMat, ouptMat, optsAdaDelta);
+[~, ~, funcVecAdam]     = EvaMethod(featMat, ouptMat, optsAdam);
+
+% visualize the optimization process of each method
+VisualOptProc([funcVecGradDst, funcVecAdaGrad, funcVecAdaDelta, funcVecAdam]);
 
 end
 
@@ -107,8 +110,8 @@ function [optsGradDst, optsAdaGrad, optsAdaDelta, optsAdam] = InitOpts(smplCnt)
 %   optsAdam: structure (Adam's optimization options)
 
 % configure common optimization options for all methods
-opts.enblVis = true;
-opts.epchCnt = 100;
+opts.enblVis = false;
+opts.epchCnt = 50;
 opts.smplCnt = smplCnt;
 opts.batcSiz = 50;
 
@@ -141,7 +144,7 @@ optsAdam.fudgFctr = 1e-6;
 
 end
 
-function projMatIter = EvaMethod(featMat, ouptMat, opts)
+function [projMat, funcVal, funcVec] = EvaMethod(featMat, ouptMat, opts)
 % INTRO
 %   evaluate the selected optimization method
 % INPUT
@@ -149,7 +152,9 @@ function projMatIter = EvaMethod(featMat, ouptMat, opts)
 %   ouptMat: R x N (output matrix)
 %   opts: structure (optimization options)
 % OUTPUT
-%   projMatIter: D x R (projection matrix, obtained via iterative optimization)
+%   projMat: D x R (projection matrix)
+%   funcVal: scalar (function's value of the optimal solution)
+%   funcVec: T x 1 (list of function's values through iterations)
 
 % obtain basic variables
 featCnt = size(featMat, 1);
@@ -158,9 +163,54 @@ ouptCnt = size(ouptMat, 1);
 % solve the optimization via gradient descent
 projMatInit = randn(featCnt, ouptCnt);
 paraVecInit = projMatInit(:);
-[funcVal, paraVecIter] = ...
-  minFunc(paraVecInit, @CalcFuncGrad, opts, featMat, ouptMat);
-projMatIter = reshape(paraVecIter, [featCnt, ouptCnt]);
+[paraVec, funcVal, funcVec] = ...
+  minFunc(@CalcFuncGrad, paraVecInit, opts, featMat, ouptMat);
+projMat = reshape(paraVec, [featCnt, ouptCnt]);
 fprintf('[INFO] funcVal (%s) = %.4e\n', opts.method, funcVal);
+
+end
+
+function VisualOptProc(funcMat)
+% INTRO
+%   visualize the optimization process of each method
+% INPUT
+%   funcMat: (T + 1) x 4 (matrix of function's values through iterations)
+% OUTPUT
+%   None
+
+% obtain basic variables
+iterCnt = size(funcMat, 1) - 1; % exclude the initial function's value
+iterCntLast = 11;
+assert(iterCntLast <= iterCnt);
+xAxisLft = (0 : iterCnt);
+xAxisRht = (iterCnt - iterCntLast + 1 : iterCnt);
+
+% LEFT FIGURE: complete curve of function's values
+subplot(1, 2, 1);
+hold on;
+plot(xAxisLft, funcMat(:, 1), 'r-o');
+plot(xAxisLft, funcMat(:, 2), 'g-.+');
+plot(xAxisLft, funcMat(:, 3), 'b-*');
+plot(xAxisLft, funcMat(:, 4), 'm-.x');
+grid on;
+legend({'GradDst', 'AdaGrad', 'AdaDelta', 'Adam'}, 'Location', 'East');
+xlabel('# of Iterations');
+ylabel('Mean Squared Error');
+set(gca, 'FontSize', 12);
+title(sprintf('All %d Iterations', iterCnt));
+
+% RIGHT FIGURE: partial curve of function's values (last a few iterations)
+subplot(1, 2, 2);
+hold on;
+plot(xAxisRht, funcMat(end - iterCntLast + 1 : end, 1), 'r-o');
+plot(xAxisRht, funcMat(end - iterCntLast + 1 : end, 2), 'g-.+');
+plot(xAxisRht, funcMat(end - iterCntLast + 1 : end, 3), 'b-*');
+plot(xAxisRht, funcMat(end - iterCntLast + 1 : end, 4), 'm-.x');
+grid on;
+legend({'GradDst', 'AdaGrad', 'AdaDelta', 'Adam'}, 'Location', 'East');
+xlabel('# of Iterations');
+ylabel('Mean Squared Error');
+set(gca, 'FontSize', 12);
+title(sprintf('Last %d Iterations', iterCntLast));
 
 end

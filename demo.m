@@ -26,11 +26,14 @@ projMatClsd = (ouptMat / featMat)';
 [funcValClsd, ~] = CalcFuncGrad(projMatClsd(:), [], featMat, ouptMat);
 fprintf('[INFO] funcVal (closed-form) = %.4e\n', funcValClsd);
 
-% evaluate the optimization method
-EvaMethod_GradDst(featMat, ouptMat);
-EvaMethod_AdaGrad(featMat, ouptMat);
-EvaMethod_AdaDelta(featMat, ouptMat);
-EvaMethod_Adam(featMat, ouptMat);
+% initialize optimization options for each method
+[optsGradDst, optsAdaGrad, optsAdaDelta, optsAdam] = InitOpts(opts.smplCnt);
+
+% evaluate each method's performance
+EvaMethod(featMat, ouptMat, optsGradDst);
+EvaMethod(featMat, ouptMat, optsAdaGrad);
+EvaMethod(featMat, ouptMat, optsAdaDelta);
+EvaMethod(featMat, ouptMat, optsAdam);
 
 end
 
@@ -92,135 +95,67 @@ gradVec = gradMat(:);
 
 end
 
-function projMatIter = EvaMethod_GradDst(featMat, ouptMat)
+function [optsGradDst, optsAdaGrad, optsAdaDelta, optsAdam] = InitOpts(smplCnt)
 % INTRO
-%   evaluate the optimization method: gradient descent
+%   initialize optimization options for each method
+% INPUT
+%   smplCnt: scalar (number of samples; required for mini-batch construction)
+% OUTPUT
+%   optsGradDst: structure (GradDst's optimization options)
+%   optsAdaGrad: structure (AdaGrad's optimization options)
+%   optsAdaDelta: structure (AdaDelta's optimization options)
+%   optsAdam: structure (Adam's optimization options)
+
+% configure common optimization options for all methods
+opts.enblVis = true;
+opts.epchCnt = 100;
+opts.smplCnt = smplCnt;
+opts.batcSiz = 50;
+
+% configure optimization options for GradDst
+optsGradDst = opts;
+optsGradDst.method = 'GradDst';
+optsGradDst.lrInit = 1e-2;
+optsGradDst.momentum = 0.9;
+
+% configure optimization options for AdaGrad
+optsAdaGrad = opts;
+optsAdaGrad.method = 'AdaGrad';
+optsAdaGrad.lrInit = 1e-1;
+optsAdaGrad.autoCorr = 0.95;
+optsAdaGrad.fudgFctr = 1e-6;
+
+% configure optimization options for AdaDelta
+optsAdaDelta = opts;
+optsAdaDelta.method = 'AdaDelta';
+optsAdaDelta.momentum = 0.999;
+optsAdaDelta.fudgFctr = 1e-6;
+
+% configure optimization options for Adam
+optsAdam = opts;
+optsAdam.method = 'Adam';
+optsAdam.lrInit = 1e-1;
+optsAdam.betaFst = 0.90;
+optsAdam.betaSec = 0.90;
+optsAdam.fudgFctr = 1e-6;
+
+end
+
+function projMatIter = EvaMethod(featMat, ouptMat, opts)
+% INTRO
+%   evaluate the selected optimization method
 % INPUT
 %   featMat: D x N (feature matrix)
 %   ouptMat: R x N (output matrix)
+%   opts: structure (optimization options)
 % OUTPUT
 %   projMatIter: D x R (projection matrix, obtained via iterative optimization)
 
 % obtain basic variables
 featCnt = size(featMat, 1);
-smplCnt = size(featMat, 2);
 ouptCnt = size(ouptMat, 1);
-
-% configure optimization options
-opts.method = 'GradDst';
-opts.enblVis = true;
-opts.epchCnt = 100;
-opts.smplCnt = smplCnt;
-opts.batcSiz = 50;
-opts.lrInit = 1e-2;
-opts.momentum = 0.9;
 
 % solve the optimization via gradient descent
-projMatInit = randn(featCnt, ouptCnt);
-paraVecInit = projMatInit(:);
-[funcVal, paraVecIter] = ...
-  minFunc(paraVecInit, @CalcFuncGrad, opts, featMat, ouptMat);
-projMatIter = reshape(paraVecIter, [featCnt, ouptCnt]);
-fprintf('[INFO] funcVal (%s) = %.4e\n', opts.method, funcVal);
-
-end
-
-function projMatIter = EvaMethod_AdaGrad(featMat, ouptMat)
-% INTRO
-%   evaluate the optimization method: AdaGrad
-% INPUT
-%   featMat: D x N (feature matrix)
-%   ouptMat: R x N (output matrix)
-% OUTPUT
-%   projMatIter: D x R (projection matrix, obtained via iterative optimization)
-
-% obtain basic variables
-featCnt = size(featMat, 1);
-smplCnt = size(featMat, 2);
-ouptCnt = size(ouptMat, 1);
-
-% configure optimization options
-opts.method = 'AdaGrad';
-opts.methodDisp = 'AdaGrad';
-opts.enblVis = true;
-opts.epchCnt = 100;
-opts.smplCnt = smplCnt;
-opts.batcSiz = 50;
-opts.lrInit = 1e-1;
-opts.autoCorr = 0.95;
-opts.fudgFctr = 1e-6;
-
-% solve the optimization via AdaGrad
-projMatInit = randn(featCnt, ouptCnt);
-paraVecInit = projMatInit(:);
-[funcVal, paraVecIter] = ...
-  minFunc(paraVecInit, @CalcFuncGrad, opts, featMat, ouptMat);
-projMatIter = reshape(paraVecIter, [featCnt, ouptCnt]);
-fprintf('[INFO] funcVal (%s) = %.4e\n', opts.method, funcVal);
-
-end
-
-function projMatIter = EvaMethod_AdaDelta(featMat, ouptMat)
-% INTRO
-%   evaluate the optimization method: AdaDelta
-% INPUT
-%   featMat: D x N (feature matrix)
-%   ouptMat: R x N (output matrix)
-% OUTPUT
-%   projMatIter: D x R (projection matrix, obtained via iterative optimization)
-
-% obtain basic variables
-featCnt = size(featMat, 1);
-smplCnt = size(featMat, 2);
-ouptCnt = size(ouptMat, 1);
-
-% configure optimization options
-opts.method = 'AdaDelta';
-opts.methodDisp = 'AdaDelta';
-opts.enblVis = true;
-opts.epchCnt = 100;
-opts.smplCnt = smplCnt;
-opts.batcSiz = 50;
-opts.momentum = 0.999;
-opts.fudgFctr = 1e-6;
-
-% solve the optimization via AdaDelta
-projMatInit = randn(featCnt, ouptCnt);
-paraVecInit = projMatInit(:);
-[funcVal, paraVecIter] = ...
-  minFunc(paraVecInit, @CalcFuncGrad, opts, featMat, ouptMat);
-projMatIter = reshape(paraVecIter, [featCnt, ouptCnt]);
-fprintf('[INFO] funcVal (%s) = %.4e\n', opts.method, funcVal);
-
-end
-
-function projMatIter = EvaMethod_Adam(featMat, ouptMat)
-% INTRO
-%   evaluate the optimization method: Adam
-% INPUT
-%   featMat: D x N (feature matrix)
-%   ouptMat: R x N (output matrix)
-% OUTPUT
-%   projMatIter: D x R (projection matrix, obtained via iterative optimization)
-
-% obtain basic variables
-featCnt = size(featMat, 1);
-smplCnt = size(featMat, 2);
-ouptCnt = size(ouptMat, 1);
-
-% configure optimization options
-opts.method = 'Adam';
-opts.methodDisp = 'Adam';
-opts.enblVis = true;
-opts.epchCnt = 100;
-opts.smplCnt = smplCnt;
-opts.batcSiz = 50;
-opts.lrInit = 1e-1;
-opts.betaFst = 0.90;
-opts.betaSec = 0.90;
-opts.fudgFctr = 1e-6;
-
-% solve the optimization via AdaDelta
 projMatInit = randn(featCnt, ouptCnt);
 paraVecInit = projMatInit(:);
 [funcVal, paraVecIter] = ...

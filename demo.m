@@ -14,7 +14,7 @@ opts.featCnt = 100;
 opts.ouptCnt = 50;
 opts.featMgn = 1.0;
 opts.projMgn = 1.0;
-opts.noisRat = 0.01;
+opts.noisRat = 0.02;
 [featMat, ouptMat, projMatUnly] = GnrtData(opts);
 
 % evaluate the underlying projection matrix
@@ -111,7 +111,7 @@ function [optsGradDst, optsAdaGrad, optsAdaDelta, optsAdam] = InitOpts(smplCnt)
 
 % configure common optimization options for all methods
 opts.enblVis = false;
-opts.epchCnt = 50;
+opts.epchCnt = 100;
 opts.smplCnt = smplCnt;
 opts.batcSiz = 50;
 
@@ -119,6 +119,8 @@ opts.batcSiz = 50;
 optsGradDst = opts;
 optsGradDst.method = 'GradDst';
 optsGradDst.lrInit = 1e-2;
+optsGradDst.lrIncrMult = 1.5;
+optsGradDst.lrDecrMult = 0.5;
 optsGradDst.momentum = 0.9;
 
 % configure optimization options for AdaGrad

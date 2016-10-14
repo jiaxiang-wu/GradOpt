@@ -36,6 +36,13 @@ for epchIdx = 1 : opts.epchCnt
   % record related variables
   [funcVal, ~] = funcHndl(paraVec, [], varargin{:});
   funcVec(epchIdx + 1) = funcVal;
+  
+  % update the learning rate
+  if funcVec(epchIdx) > funcVec(epchIdx + 1)
+    lr = lr * opts.lrIncrMult;
+  else
+    lr = lr * opts.lrDecrMult;
+  end
 end
 
 end
